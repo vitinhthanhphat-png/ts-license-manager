@@ -25,7 +25,7 @@ No SaaS subscription. No external API dependency. 100% offline verification on c
 
 - 🔑 **RSA-2048 Key Management** — Generate and rotate key pairs from the admin UI
 - 📜 **License Generation** — Issue domain-locked licenses with lifetime, yearly, or trial types
-- 🌐 **Domain Registry** — Track which domains have active licenses
+- 🌐 **Domain Registry** — Track which domains have issued licenses and delete them if necessary
 - 📊 **Dashboard** — Overview of total licenses, active domains, and key status
 - 📋 **Audit Log** — Complete history of all license operations
 - 📖 **Built-in Guide** — Integration snippets and step-by-step instructions

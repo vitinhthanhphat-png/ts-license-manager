@@ -50,8 +50,8 @@ try {
 if ($releaseExists) {
     Write-Host "Release $Version exists. Deleting and recreating..." -ForegroundColor Yellow
     gh release delete $Version --yes --cleanup-tag 2>&1 | Out-Null
-    git tag -d $Version 2>&1 | Out-Null
-    git push origin --delete $Version 2>&1 | Out-Null
+    try { git tag -d $Version 2>&1 | Out-Null } catch {}
+    try { git push origin --delete $Version 2>&1 | Out-Null } catch {}
 }
 
 # Create release with ZIP attached
