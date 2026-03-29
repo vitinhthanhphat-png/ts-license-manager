@@ -20,13 +20,15 @@ class License_Generator {
             throw new \InvalidArgumentException("Invalid domain: {$domain}");
         }
 
-        // Get active private key
-        $private_key = $this->key_manager->get_active_private_key();
+        $key_id = !empty($options['key_id']) ? (int) $options['key_id'] : null;
+
+        // Get active private key (either specified by key_id, or the latest active one)
+        $private_key = $this->key_manager->get_active_private_key($key_id);
         if (!$private_key) {
-            throw new \RuntimeException('No active private key found. Generate or import a key first.');
+            throw new \RuntimeException('No signed private key found. Generate or import a key first.');
         }
 
-        $active_key = $this->key_manager->get_active_key();
+        $active_key = $this->key_manager->get_active_key($key_id);
 
         $type = $options['type'] ?? 'lifetime';
         if (!in_array($type, ['lifetime', 'yearly', 'trial'], true)) {
@@ -40,8 +42,6 @@ class License_Generator {
             'v'          => 2,
             'domain'     => $domain,
             'type'       => $type,
-            'features'   => $this->parse_features($options['features'] ?? 'all'),
-            'max_users'  => (int) ($options['max_users'] ?? 0),
             'created_at' => time(),
             'expires_at' => $expires_at,
             'customer'   => $options['customer'] ?? null,
@@ -80,8 +80,6 @@ class License_Generator {
                 'domain'          => $domain,
                 'license_type'    => $type,
                 'customer_name'   => $options['customer'] ?? null,
-                'features'        => wp_json_encode($payload['features']),
-                'max_users'       => $payload['max_users'] ?? 0,
                 'activation_code' => $activation_code,
                 'status'          => 'active',
                 'created_by'      => get_current_user_id(),
@@ -89,7 +87,7 @@ class License_Generator {
                 'expires_at'      => $expires_at ? gmdate('Y-m-d H:i:s', $expires_at) : null,
                 'notes'           => $options['notes'] ?? null,
             ],
-            ['%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s']
         );
 
         $license_id = $wpdb->insert_id;
@@ -105,7 +103,6 @@ class License_Generator {
             'domain'          => $domain,
             'type'            => $type,
             'customer'        => $options['customer'] ?? null,
-            'features'        => $payload['features'],
             'activation_code' => $activation_code,
             'created_at'      => current_time('mysql'),
             'expires_at'      => $expires_at ? gmdate('Y-m-d H:i:s', $expires_at) : null,
@@ -115,10 +112,10 @@ class License_Generator {
     /**
      * Verify a license code
      */
-    public function verify(string $code, ?string $domain = null): array {
-        $active_key = $this->key_manager->get_active_key();
+    public function verify(string $code, ?string $domain = null, ?int $key_id = null): array {
+        $active_key = $this->key_manager->get_active_key($key_id);
         if (!$active_key) {
-            return ['valid' => false, 'error' => 'No active key pair found'];
+            return ['valid' => false, 'error' => $key_id ? 'Original public key not found' : 'No active key pair found'];
         }
 
         $decoded = base64_decode($code, true);
@@ -212,9 +209,9 @@ class License_Generator {
     }
 
     /**
-     * Revoke a license
+     * Delete a license
      */
-    public function revoke_license(int $license_id): bool {
+    public function delete_license(int $license_id): bool {
         global $wpdb;
         $table = Database::table(Database::LICENSE_TABLE);
 
@@ -227,18 +224,13 @@ class License_Generator {
             return false;
         }
 
-        $wpdb->update(
+        $wpdb->delete(
             $table,
-            [
-                'status'     => 'revoked',
-                'revoked_at' => current_time('mysql'),
-            ],
             ['id' => $license_id],
-            ['%s', '%s'],
             ['%d']
         );
 
-        Database::audit_log('license_revoked', 'license', $license_id, [
+        Database::audit_log('license_deleted', 'license', $license_id, [
             'domain' => $license['domain'],
         ]);
 
@@ -256,11 +248,10 @@ class License_Generator {
         $total     = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
         $active    = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'active'");
         $expired   = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'expired'");
-        $revoked   = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'revoked'");
         $trial     = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE license_type = 'trial' AND status = 'active'");
         $lifetime  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE license_type = 'lifetime' AND status = 'active'");
         $yearly    = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE license_type = 'yearly' AND status = 'active'");
-        $has_keys  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$keys_table} WHERE is_active = 1") > 0;
+        $has_keys  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$keys_table}") > 0;
 
         // Unique domains
         $domains = (int) $wpdb->get_var("SELECT COUNT(DISTINCT domain) FROM {$table} WHERE status = 'active'");
@@ -275,7 +266,6 @@ class License_Generator {
             'total'          => $total,
             'active'         => $active,
             'expired'        => $expired,
-            'revoked'        => $revoked,
             'trial'          => $trial,
             'lifetime'       => $lifetime,
             'yearly'         => $yearly,
@@ -304,15 +294,6 @@ class License_Generator {
         };
     }
 
-    /**
-     * Parse features string to array
-     */
-    private function parse_features(string $features): array {
-        if ($features === 'all') {
-            return ['all'];
-        }
-        return array_map('trim', explode(',', $features));
-    }
 
     /**
      * Validate a domain name

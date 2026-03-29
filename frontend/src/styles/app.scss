@@ -64,8 +64,23 @@
 }
 
 /* Fix Quasar modals/tooltips being hidden behind WP Admin Sidebar/Topbar (z-index 9999) */
-.q-dialog, .q-menu, .q-tooltip, .q-notify {
-  z-index: 100000 !important;
+body {
+  .q-dialog, .q-menu, .q-tooltip, .q-notifications, .q-notification {
+    z-index: 100000 !important;
+  }
+}
+
+/* Ensure notifications don't overlap WP admin bar (32px) and give breathing room */
+body.admin-bar .q-notifications__list--top,
+body.admin-bar .q-notifications__list--top-right,
+body.admin-bar .q-notifications__list--top-left,
+body.admin-bar .q-notifications__list--top-center {
+  top: 45px !important;
+}
+
+/* Fallback if .admin-bar isn't present but they are still fixed */
+.q-notifications {
+  padding-top: 10px;
 }
 
 /* === CRITICAL: Override Quasar fixed positioning === */

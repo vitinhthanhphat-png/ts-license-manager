@@ -46,7 +46,7 @@ export const keysApi = {
 export const licensesApi = {
   getAll: (params = {}) => api.get('licenses', { params }),
   generate: (data) => api.post('licenses/generate', data),
-  revoke: (id) => api.put(`licenses/${id}/revoke`),
+  delete: (id) => api.delete(`licenses/${id}`),
   verify: (id) => api.post(`licenses/${id}/verify`),
   bulkGenerate: (domains) => api.post('licenses/bulk', { domains }),
 }
@@ -54,6 +54,7 @@ export const licensesApi = {
 // ── Audit Log ──
 export const auditApi = {
   getLog: (params = {}) => api.get('audit-log', { params }),
+  clearLog: () => api.delete('audit-log'),
 }
 
 // ── System ──

@@ -27,6 +27,22 @@
             </div>
 
             <q-form @submit.prevent="handleGenerate" class="q-gutter-y-md">
+              <q-select
+                v-model="form.key_id"
+                :options="keyStore.keys"
+                option-value="id"
+                :option-label="opt => opt.key_name + ' (ID: ' + opt.id + ')'"
+                label="Signing Key *"
+                outlined
+                emit-value
+                map-options
+                hint="Select the RSA key pair to sign this license"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="key" />
+                </template>
+              </q-select>
+
               <q-input
                 v-model="form.domain"
                 label="Domain *"
@@ -186,7 +202,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useQuasar, copyToClipboard } from 'quasar'
 import { useLicenseStore } from '@/stores/licenses'
 import { useKeyStore } from '@/stores/keys'
@@ -198,6 +214,7 @@ const keyStore = useKeyStore()
 const dashboardStore = useDashboardStore()
 
 const form = reactive({
+  key_id: null,
   domain: '',
   type: 'lifetime',
   customer: '',
@@ -215,6 +232,15 @@ const licenseTypes = [
   { label: '⏱️ Trial — 30 days', value: 'trial' },
 ]
 
+onMounted(async () => {
+  if (keyStore.keys.length === 0) {
+    await keyStore.fetchKeys()
+  }
+  if (!form.key_id && keyStore.keys.length > 0) {
+    form.key_id = keyStore.keys[0].id
+  }
+})
+
 
 
 function typeColor(type) {
@@ -229,6 +255,7 @@ async function handleGenerate() {
 
   try {
     const result = await licenseStore.generateLicense({
+      key_id: form.key_id || undefined,
       domain: form.domain,
       type: form.type,
       customer: form.customer || undefined,

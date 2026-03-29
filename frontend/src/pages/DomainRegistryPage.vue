@@ -133,11 +133,10 @@
               <q-tooltip>Verify License</q-tooltip>
             </q-btn>
             <q-btn
-              v-if="props.row.status === 'active'"
-              flat round size="sm" icon="block" color="negative"
-              @click="confirmRevoke(props.row)"
+              flat round size="sm" icon="delete" color="negative"
+              @click="confirmDelete(props.row)"
             >
-              <q-tooltip>Revoke</q-tooltip>
+              <q-tooltip>Delete</q-tooltip>
             </q-btn>
           </q-td>
         </template>
@@ -176,7 +175,6 @@ const statusOptions = [
   { label: 'All Statuses', value: '' },
   { label: 'Active', value: 'active' },
   { label: 'Expired', value: 'expired' },
-  { label: 'Revoked', value: 'revoked' },
 ]
 
 const typeOptions = [
@@ -250,20 +248,20 @@ async function verifyLicense(row) {
   }
 }
 
-function confirmRevoke(row) {
+function confirmDelete(row) {
   $q.dialog({
-    title: 'Revoke License',
-    message: `Revoke license for <strong>${row.domain}</strong>?<br>The customer will no longer be able to use this license.`,
+    title: 'Delete License',
+    message: `Are you sure you want to delete the license for <strong>${row.domain}</strong>?<br>This action cannot be undone.`,
     html: true,
     cancel: true,
     persistent: true,
     color: 'negative',
   }).onOk(async () => {
     try {
-      await store.revokeLicense(row.id)
-      $q.notify({ type: 'positive', message: `License for ${row.domain} revoked` })
+      await store.deleteLicense(row.id)
+      $q.notify({ type: 'positive', message: `License for ${row.domain} deleted` })
     } catch (e) {
-      $q.notify({ type: 'negative', message: 'Failed to revoke license' })
+      $q.notify({ type: 'negative', message: 'Failed to delete license' })
     }
   })
 }

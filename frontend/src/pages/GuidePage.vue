@@ -213,10 +213,7 @@ const faqs = [
     q: 'What license types are available?',
     a: 'Three types: Lifetime (never expires), Yearly (365 days), and Trial (30 days). You can also set a custom expiry date for any type.',
   },
-  {
-    q: 'How do I revoke a license?',
-    a: 'Go to the Domains tab, find the domain, and click the revoke button. Note: revocation only works if your client plugin checks a revocation list, since offline verification cannot be remotely disabled.',
-  },
+
 ]
 </script>
 

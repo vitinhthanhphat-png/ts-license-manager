@@ -36,6 +36,11 @@ const routes = [
     name: 'system',
     component: () => import('@/pages/SystemPage.vue'),
   },
+  {
+    path: '/about',
+    name: 'about',
+    component: () => import('@/pages/AboutPage.vue'),
+  },
 ]
 
 const router = createRouter({

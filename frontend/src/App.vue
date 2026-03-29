@@ -37,7 +37,7 @@
     <q-page-container>
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
-          <component :is="Component" />
+          <component :is="Component" :key="$route.fullPath" />
         </transition>
       </router-view>
     </q-page-container>
@@ -69,6 +69,7 @@ const navItems = [
   { path: '/audit-log', icon: 'history', label: 'Audit Log' },
   { path: '/system', icon: 'settings', label: 'System' },
   { path: '/guide', icon: 'menu_book', label: 'Guide' },
+  { path: '/about', icon: 'info', label: 'About' },
 ]
 
 function isActive(path) {

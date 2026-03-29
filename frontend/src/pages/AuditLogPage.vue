@@ -27,6 +27,14 @@
               label="Refresh"
               @click="loadLog"
               :loading="loading"
+              class="q-mr-sm"
+            />
+            <q-btn
+              outline color="negative"
+              icon="delete_sweep"
+              label="Clear Log"
+              @click="confirmClearLog"
+              :loading="clearing"
             />
           </div>
         </div>
@@ -88,10 +96,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { auditApi } from '@/api'
 
+const $q = useQuasar()
 const logItems = ref([])
 const loading = ref(false)
+const clearing = ref(false)
 const filterAction = ref('')
 
 const pagination = ref({
@@ -153,6 +164,32 @@ function onRequest(props) {
   pagination.value.page = props.pagination.page
   pagination.value.rowsPerPage = props.pagination.rowsPerPage
   loadLog()
+}
+
+function confirmClearLog() {
+  $q.dialog({
+    title: 'Clear Audit Log',
+    message: 'Are you sure you want to completely clear the audit log? This action cannot be undone.',
+    cancel: true,
+    persistent: true,
+    color: 'negative',
+    ok: {
+      label: 'Yes, Clear Log',
+      color: 'negative',
+      flat: true
+    }
+  }).onOk(async () => {
+    clearing.value = true
+    try {
+      await auditApi.clearLog()
+      $q.notify({ type: 'positive', message: 'Audit log cleared successfully' })
+      loadLog()
+    } catch (e) {
+      $q.notify({ type: 'negative', message: 'Failed to clear audit log' })
+    } finally {
+      clearing.value = false
+    }
+  })
 }
 
 onMounted(() => {

@@ -71,15 +71,9 @@ class Key_Manager {
             throw new \RuntimeException('Key pair verification failed');
         }
 
-        // Deactivate previous active keys
+        // All keys remain active. You can choose which key to sign with.
+
         global $wpdb;
-        $wpdb->update(
-            Database::table(Database::KEYS_TABLE),
-            ['is_active' => 0],
-            ['is_active' => 1],
-            ['%d'],
-            ['%d']
-        );
 
         // Store in database
         $wpdb->insert(
@@ -89,11 +83,10 @@ class Key_Manager {
                 'public_key'       => $public_key,
                 'private_key_path' => $private_path,
                 'private_key_hash' => hash('sha256', $private_key),
-                'is_active'        => 1,
                 'created_by'       => get_current_user_id(),
                 'created_at'       => current_time('mysql'),
             ],
-            ['%s', '%s', '%s', '%s', '%d', '%d', '%s']
+            ['%s', '%s', '%s', '%s', '%d', '%s']
         );
 
         $key_id = $wpdb->insert_id;
@@ -115,16 +108,23 @@ class Key_Manager {
     }
 
     /**
-     * Get active key pair
+     * Get active key pair (or specific key by ID)
      */
-    public function get_active_key(): ?array {
+    public function get_active_key(?int $key_id = null): ?array {
         global $wpdb;
         $table = Database::table(Database::KEYS_TABLE);
 
-        $row = $wpdb->get_row(
-            "SELECT * FROM {$table} WHERE is_active = 1 ORDER BY id DESC LIMIT 1",
-            ARRAY_A
-        );
+        if ($key_id) {
+            $row = $wpdb->get_row(
+                $wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $key_id),
+                ARRAY_A
+            );
+        } else {
+            $row = $wpdb->get_row(
+                "SELECT * FROM {$table} ORDER BY id DESC LIMIT 1",
+                ARRAY_A
+            );
+        }
 
         return $row ?: null;
     }
@@ -137,17 +137,17 @@ class Key_Manager {
         $table = Database::table(Database::KEYS_TABLE);
 
         return $wpdb->get_results(
-            "SELECT id, key_name, public_key, private_key_hash, is_active, created_by, created_at, rotated_at 
+            "SELECT id, key_name, public_key, private_key_hash, created_by, created_at
              FROM {$table} ORDER BY created_at DESC",
             ARRAY_A
         ) ?: [];
     }
 
     /**
-     * Get private key content for the active key
+     * Get private key content for the active key (or specific key by ID)
      */
-    public function get_active_private_key(): ?string {
-        $key = $this->get_active_key();
+    public function get_active_private_key(?int $key_id = null): ?string {
+        $key = $this->get_active_key($key_id);
         if (!$key || empty($key['private_key_path'])) {
             return null;
         }

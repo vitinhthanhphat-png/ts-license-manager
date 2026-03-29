@@ -17,8 +17,8 @@
     </q-banner>
 
     <!-- Stats Cards -->
-    <div v-if="stats" class="row q-col-gutter-md q-mb-lg">
-      <div class="col-12 col-sm-6 col-md-3" v-for="card in statCards" :key="card.label">
+    <div v-if="stats" class="row q-col-gutter-md q-mb-lg justify-start">
+      <div class="col-12 col-sm-4" v-for="card in statCards" :key="card.label">
         <q-card class="stat-card" :style="{ borderLeft: `4px solid ${card.color}` }">
           <q-card-section>
             <div class="row items-center no-wrap">
@@ -123,7 +123,6 @@ const statCards = computed(() => {
     { label: 'Total Licenses', value: stats.value.total, icon: 'confirmation_number', color: '#1a73e8', qColor: 'primary' },
     { label: 'Active', value: stats.value.active, icon: 'check_circle', color: '#34a853', qColor: 'positive' },
     { label: 'Expired', value: stats.value.expired, icon: 'timer_off', color: '#fbbc04', qColor: 'warning' },
-    { label: 'Revoked', value: stats.value.revoked, icon: 'block', color: '#ea4335', qColor: 'negative' },
   ]
 })
 

@@ -76,12 +76,15 @@ class Rest_Api {
                 'per_page' => ['type' => 'integer', 'default' => 20],
             ],
         ]);
-
         register_rest_route(self::NAMESPACE, '/licenses/generate', [
             'methods'             => 'POST',
             'callback'            => [$this, 'generate_license'],
             'permission_callback' => [$this, 'check_admin'],
             'args'                => [
+                'key_id' => [
+                    'type'              => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
                 'domain' => [
                     'type'              => 'string',
                     'required'          => true,
@@ -96,14 +99,6 @@ class Rest_Api {
                     'type'              => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
                 ],
-                'features' => [
-                    'type'    => 'string',
-                    'default' => 'all',
-                ],
-                'max_users' => [
-                    'type'    => 'integer',
-                    'default' => 0,
-                ],
                 'expires' => [
                     'type'              => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
@@ -115,9 +110,9 @@ class Rest_Api {
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/licenses/(?P<id>\d+)/revoke', [
-            'methods'             => 'PUT',
-            'callback'            => [$this, 'revoke_license'],
+        register_rest_route(self::NAMESPACE, '/licenses/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [$this, 'delete_license'],
             'permission_callback' => [$this, 'check_admin'],
         ]);
 
@@ -148,14 +143,21 @@ class Rest_Api {
 
         // ── Audit Log ──
         register_rest_route(self::NAMESPACE, '/audit-log', [
-            'methods'             => 'GET',
-            'callback'            => [$this, 'get_audit_log'],
-            'permission_callback' => [$this, 'check_admin'],
-            'args'                => [
-                'page'     => ['type' => 'integer', 'default' => 1],
-                'per_page' => ['type' => 'integer', 'default' => 50],
-                'action'   => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+            [
+                'methods'             => 'GET',
+                'callback'            => [$this, 'get_audit_log'],
+                'permission_callback' => [$this, 'check_admin'],
+                'args'                => [
+                    'page'     => ['type' => 'integer', 'default' => 1],
+                    'per_page' => ['type' => 'integer', 'default' => 50],
+                    'action'   => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+                ],
             ],
+            [
+                'methods'             => 'DELETE',
+                'callback'            => [$this, 'clear_audit_log'],
+                'permission_callback' => [$this, 'check_admin'],
+            ]
         ]);
     }
 
@@ -183,6 +185,14 @@ class Rest_Api {
         foreach ($keys as &$key) {
             unset($key['private_key_path']);
             $key['has_private_key'] = !empty($key['private_key_hash']);
+            
+            // Resolve user ID to display name
+            if (!empty($key['created_by'])) {
+                $user = get_userdata($key['created_by']);
+                $key['created_by'] = $user ? $user->display_name : 'System';
+            } else {
+                $key['created_by'] = 'System';
+            }
         }
 
         return new \WP_REST_Response($keys);
@@ -280,10 +290,9 @@ class Rest_Api {
             $result = $generator->generate(
                 $request->get_param('domain'),
                 [
+                    'key_id'    => $request->get_param('key_id'),
                     'type'      => $request->get_param('type'),
                     'customer'  => $request->get_param('customer'),
-                    'features'  => $request->get_param('features'),
-                    'max_users' => $request->get_param('max_users'),
                     'expires'   => $request->get_param('expires'),
                     'notes'     => $request->get_param('notes'),
                 ]
@@ -301,14 +310,14 @@ class Rest_Api {
         }
     }
 
-    public function revoke_license(\WP_REST_Request $request): \WP_REST_Response {
+    public function delete_license(\WP_REST_Request $request): \WP_REST_Response {
         $generator = new License_Generator();
-        $revoked = $generator->revoke_license((int) $request->get_param('id'));
+        $deleted = $generator->delete_license((int) $request->get_param('id'));
 
         return new \WP_REST_Response([
-            'success' => $revoked,
-            'message' => $revoked ? 'License revoked' : 'License not found',
-        ], $revoked ? 200 : 404);
+            'success' => $deleted,
+            'message' => $deleted ? 'License deleted' : 'License not found',
+        ], $deleted ? 200 : 404);
     }
 
     public function verify_license(\WP_REST_Request $request): \WP_REST_Response {
@@ -325,7 +334,7 @@ class Rest_Api {
         }
 
         $generator = new License_Generator();
-        $result = $generator->verify($license['activation_code'], $license['domain']);
+        $result = $generator->verify($license['activation_code'], $license['domain'], $license['key_id']);
 
         return new \WP_REST_Response($result);
     }
@@ -421,6 +430,20 @@ class Rest_Api {
             'page'  => $page,
             'pages' => ceil($total / $per_page),
         ]);
+    }
+
+    /**
+     * Clear all audit logs
+     */
+    public function clear_audit_log(\WP_REST_Request $request): \WP_REST_Response {
+        global $wpdb;
+        $table = Database::table(Database::AUDIT_TABLE);
+
+        $wpdb->query("TRUNCATE TABLE {$table}");
+
+        Database::audit_log('audit_log_cleared');
+
+        return new \WP_REST_Response(['success' => true]);
     }
 
     /**

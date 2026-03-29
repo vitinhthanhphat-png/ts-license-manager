@@ -45,10 +45,10 @@ export const useLicenseStore = defineStore('licenses', () => {
     }
   }
 
-  async function revokeLicense(id) {
+  async function deleteLicense(id) {
     loading.value = true
     try {
-      await licensesApi.revoke(id)
+      await licensesApi.delete(id)
       await fetchLicenses()
     } catch (e) {
       error.value = e.response?.data?.error || e.message
@@ -89,7 +89,7 @@ export const useLicenseStore = defineStore('licenses', () => {
     filters,
     fetchLicenses,
     generateLicense,
-    revokeLicense,
+    deleteLicense,
     verifyLicense,
     bulkGenerate,
   }

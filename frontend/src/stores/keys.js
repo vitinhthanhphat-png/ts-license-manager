@@ -10,7 +10,7 @@ export const useKeyStore = defineStore('keys', () => {
 
   const hasActiveKey = computed(() => status.value?.has_active_key === true)
   const hasPrivateKey = computed(() => status.value?.has_private_key === true)
-  const activeKey = computed(() => keys.value.find(k => k.is_active == 1))
+  const activeKey = computed(() => keys.value[0] || null)
 
   async function fetchKeys() {
     loading.value = true

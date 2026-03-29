@@ -16,50 +16,8 @@
       </div>
     </div>
 
-    <!-- Active Key Info -->
-    <q-card v-if="store.activeKey" class="q-mb-lg" style="border-left: 4px solid #34a853">
-      <q-card-section>
-        <div class="row items-center q-mb-md">
-          <q-icon name="vpn_key" color="positive" size="md" class="q-mr-sm" />
-          <div class="text-h6">Active Key: {{ store.activeKey.key_name }}</div>
-          <q-space />
-          <q-badge color="positive">ACTIVE</q-badge>
-        </div>
-
-        <div class="row q-col-gutter-md">
-          <div class="col-12 col-md-6">
-            <div class="text-subtitle2 q-mb-xs text-grey-7">Public Key</div>
-            <div class="key-display">{{ store.activeKey.public_key }}</div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="text-subtitle2 q-mb-xs text-grey-7">Details</div>
-            <q-list dense>
-              <q-item>
-                <q-item-section>Created</q-item-section>
-                <q-item-section side>{{ store.activeKey.created_at }}</q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>Private Key</q-item-section>
-                <q-item-section side>
-                  <q-badge :color="store.activeKey.has_private_key ? 'positive' : 'negative'">
-                    {{ store.activeKey.has_private_key ? 'Available' : 'Missing' }}
-                  </q-badge>
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>Hash (SHA-256)</q-item-section>
-                <q-item-section side class="text-caption" style="font-family: monospace">
-                  {{ (store.activeKey.private_key_hash || '').substring(0, 16) }}...
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
-
     <!-- No key warning -->
-    <div v-if="!store.activeKey && !store.loading" class="empty-state">
+    <div v-if="store.keys.length === 0 && !store.loading" class="empty-state">
       <q-icon name="vpn_key_off" />
       <h3>No Key Pair Generated</h3>
       <p>Generate an RSA-2048 key pair to start issuing licenses</p>
@@ -79,24 +37,58 @@
         :loading="store.loading"
         :rows-per-page-options="[10, 20, 50]"
       >
-        <template v-slot:body-cell-is_active="props">
-          <q-td :props="props">
-            <q-badge :color="props.value == 1 ? 'positive' : 'grey'">
-              {{ props.value == 1 ? 'Active' : 'Inactive' }}
-            </q-badge>
-          </q-td>
+        <template v-slot:header="props">
+          <q-tr :props="props">
+            <q-th auto-width />
+            <q-th v-for="col in props.cols" :key="col.name" :props="props">
+              {{ col.label }}
+            </q-th>
+          </q-tr>
         </template>
 
-        <template v-slot:body-cell-actions="props">
-          <q-td :props="props">
-            <q-btn
-              flat round size="sm" icon="delete" color="negative"
-              @click="confirmDelete(props.row)"
-              :disable="props.row.is_active == 1"
-            >
-              <q-tooltip>{{ props.row.is_active == 1 ? 'Cannot delete active key' : 'Delete' }}</q-tooltip>
-            </q-btn>
-          </q-td>
+        <template v-slot:body="props">
+          <q-tr :props="props" class="cursor-pointer" @click="props.expand = !props.expand">
+            <q-td auto-width>
+               <q-btn size="sm" color="primary" round dense outline @click.stop="props.expand = !props.expand" :icon="props.expand ? 'remove' : 'add'" />
+            </q-td>
+            <q-td v-for="col in props.cols" :key="col.name" :props="props">
+              <template v-if="col.name === 'actions'">
+                <q-btn flat round size="sm" icon="delete" color="negative" @click.stop="confirmDelete(props.row)" />
+              </template>
+              <template v-else>
+                {{ col.value }}
+              </template>
+            </q-td>
+          </q-tr>
+          <q-tr v-show="props.expand" :props="props">
+            <q-td colspan="100%" class="bg-grey-1">
+              <div class="row q-pa-md q-col-gutter-md">
+                 <!-- Expanded content: Public Key and Hash -->
+                 <div class="col-12 col-md-8">
+                   <div class="text-subtitle2 text-grey-8 q-mb-sm">Public Key</div>
+                   <div class="key-display" style="font-size: 11px; white-space: pre-wrap; word-break: break-all;">
+                      {{ props.row.public_key }}
+                   </div>
+                   <q-btn size="sm" color="primary" outline icon="content_copy" label="Copy Public Key" @click="copyText(props.row.public_key)" class="q-mt-sm" />
+                 </div>
+                 <div class="col-12 col-md-4">
+                   <div class="text-subtitle2 text-grey-8 q-mb-sm">Details</div>
+                   <q-list dense>
+                     <q-item>
+                       <q-item-section>Private Key Hash</q-item-section>
+                       <q-item-section side class="text-caption" style="font-family: monospace">
+                         {{ (props.row.private_key_hash || '').substring(0, 16) }}...
+                       </q-item-section>
+                     </q-item>
+                     <q-item>
+                       <q-item-section>Created By</q-item-section>
+                       <q-item-section side>{{ props.row.created_by }}</q-item-section>
+                     </q-item>
+                   </q-list>
+                 </div>
+              </div>
+            </q-td>
+          </q-tr>
         </template>
       </q-table>
     </q-card>
@@ -114,7 +106,7 @@
             <template v-slot:avatar>
               <q-icon name="warning" />
             </template>
-            Generating a new key will deactivate the current one. Existing licenses signed with the old key will become invalid!
+            You are generating a new RSA key pair. Old keys will remain active and you can choose which key to sign new licenses with later.
           </q-banner>
 
           <q-input
@@ -206,10 +198,15 @@ const generatedResult = ref(null)
 const columns = [
   { name: 'id', label: 'ID', field: 'id', align: 'left', sortable: true },
   { name: 'key_name', label: 'Name', field: 'key_name', align: 'left' },
-  { name: 'is_active', label: 'Status', field: 'is_active', align: 'center' },
   { name: 'created_at', label: 'Created', field: 'created_at', align: 'left', sortable: true },
   { name: 'actions', label: 'Actions', field: 'id', align: 'center' },
 ]
+
+async function copyText(text) {
+  if (!text) return
+  await copyToClipboard(text)
+  $q.notify({ type: 'positive', message: 'Copied to clipboard!' })
+}
 
 async function handleGenerate() {
   generating.value = true
@@ -246,15 +243,21 @@ async function copyPublicKey() {
 
 function confirmDelete(key) {
   $q.dialog({
-    title: 'Delete Key Pair',
-    message: `Are you sure you want to delete key "${key.key_name}"? This action cannot be undone.`,
+    title: '<span class="text-negative"><q-icon name="warning" /> Critical Warning</span>',
+    message: `Deleting this key will <b>permanently erase</b> the Private Key file (.pem) from the server.<br><br>Old licenses previously signed by <b>${key.key_name}</b> will become orphaned and cannot be re-issued or natively verified by the system.<br><br>Type <strong>DELETE</strong> below to confirm your irreversible action:`,
+    html: true,
+    prompt: {
+      model: '',
+      type: 'text',
+      isValid: val => val === 'DELETE'
+    },
     cancel: true,
     persistent: true,
     color: 'negative',
   }).onOk(async () => {
     try {
       await store.deleteKey(key.id)
-      $q.notify({ type: 'positive', message: 'Key deleted' })
+      $q.notify({ type: 'positive', message: 'Private Key permanently deleted.' })
     } catch (e) {
       $q.notify({ type: 'negative', message: 'Failed to delete key' })
     }

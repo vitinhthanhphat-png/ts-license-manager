@@ -28,12 +28,9 @@ class Database {
                 public_key TEXT NOT NULL,
                 private_key_path VARCHAR(500) DEFAULT NULL,
                 private_key_hash VARCHAR(64) DEFAULT NULL,
-                is_active TINYINT(1) NOT NULL DEFAULT 1,
                 created_by BIGINT UNSIGNED DEFAULT NULL,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                rotated_at DATETIME DEFAULT NULL,
-                PRIMARY KEY (id),
-                KEY idx_active (is_active)
+                PRIMARY KEY (id)
             ) {$charset_collate};
 
             CREATE TABLE {$license_table} (
@@ -42,14 +39,11 @@ class Database {
                 domain VARCHAR(255) NOT NULL,
                 license_type VARCHAR(20) NOT NULL DEFAULT 'lifetime',
                 customer_name VARCHAR(255) DEFAULT NULL,
-                features TEXT DEFAULT NULL,
-                max_users INT UNSIGNED NOT NULL DEFAULT 0,
                 activation_code LONGTEXT DEFAULT NULL,
                 status VARCHAR(20) NOT NULL DEFAULT 'active',
                 created_by BIGINT UNSIGNED DEFAULT NULL,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 expires_at DATETIME DEFAULT NULL,
-                revoked_at DATETIME DEFAULT NULL,
                 notes TEXT DEFAULT NULL,
                 PRIMARY KEY (id),
                 KEY idx_domain (domain),
