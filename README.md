@@ -74,7 +74,7 @@ No SaaS subscription. No external API dependency. 100% offline verification on c
 
 ```bash
 # Clone the repo
-git clone https://github.com/AkimaNoNawa/ts-license-manager.git
+git clone https://github.com/vitinhthanhphat-png/ts-license-manager.git
 
 # Copy to your WordPress plugins directory
 cp -r ts-license-manager /path/to/wp-content/plugins/
