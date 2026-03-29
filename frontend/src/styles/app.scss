@@ -63,6 +63,11 @@
   }
 }
 
+/* Fix Quasar modals/tooltips being hidden behind WP Admin Sidebar/Topbar (z-index 9999) */
+.q-dialog, .q-menu, .q-tooltip, .q-notify {
+  z-index: 100000 !important;
+}
+
 /* === CRITICAL: Override Quasar fixed positioning === */
 #tslm-app .q-layout {
   position: relative !important;

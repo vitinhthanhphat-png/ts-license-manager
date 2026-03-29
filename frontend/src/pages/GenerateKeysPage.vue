@@ -140,8 +140,8 @@
     </q-dialog>
 
     <!-- Generated Key Result Dialog -->
-    <q-dialog v-model="showResultDialog" persistent full-width>
-      <q-card>
+    <q-dialog v-model="showResultDialog" persistent>
+      <q-card style="min-width: 800px; max-width: 95vw;">
         <q-card-section class="row items-center bg-positive text-white">
           <q-icon name="check_circle" size="md" class="q-mr-sm" />
           <div class="text-h6">Key Pair Generated Successfully!</div>

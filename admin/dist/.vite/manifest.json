@@ -1,88 +1,88 @@
 {
-  "_QBanner-Dsyrv8OB.js": {
-    "file": "assets/QBanner-Dsyrv8OB.js",
+  "_QBanner-C9LLnz6L.js": {
+    "file": "assets/QBanner-C9LLnz6L.js",
     "name": "QBanner",
     "imports": [
       "index.html"
     ]
   },
-  "_QForm-Db_iI4H_.js": {
-    "file": "assets/QForm-Db_iI4H_.js",
+  "_QForm-NeDRoy9q.js": {
+    "file": "assets/QForm-NeDRoy9q.js",
     "name": "QForm",
     "imports": [
       "index.html"
     ]
   },
-  "_QItemLabel-D4l0xL9i.js": {
-    "file": "assets/QItemLabel-D4l0xL9i.js",
+  "_QItemLabel-NRd1yoeS.js": {
+    "file": "assets/QItemLabel-NRd1yoeS.js",
     "name": "QItemLabel",
     "imports": [
       "index.html"
     ]
   },
-  "_QList-B1Nh-SdR.js": {
-    "file": "assets/QList-B1Nh-SdR.js",
+  "_QList-CJF4GnYP.js": {
+    "file": "assets/QList-CJF4GnYP.js",
     "name": "QList",
     "imports": [
       "index.html"
     ]
   },
-  "_QPage-DVNtnjqv.js": {
-    "file": "assets/QPage-DVNtnjqv.js",
+  "_QPage-CKQljtXe.js": {
+    "file": "assets/QPage-CKQljtXe.js",
     "name": "QPage",
     "imports": [
       "index.html"
     ]
   },
-  "_QSelect-DFoZpJQm.js": {
-    "file": "assets/QSelect-DFoZpJQm.js",
+  "_QSelect-CkvF03F6.js": {
+    "file": "assets/QSelect-CkvF03F6.js",
     "name": "QSelect",
     "imports": [
       "index.html",
-      "_format-C6z9_4cl.js",
-      "_QList-B1Nh-SdR.js",
-      "_QItemLabel-D4l0xL9i.js"
+      "_format-9qgtCh4O.js",
+      "_QList-CJF4GnYP.js",
+      "_QItemLabel-NRd1yoeS.js"
     ]
   },
-  "_QTable-2avo2pvs.js": {
-    "file": "assets/QTable-2avo2pvs.js",
+  "_QTable-D-iy2N8-.js": {
+    "file": "assets/QTable-D-iy2N8-.js",
     "name": "QTable",
     "imports": [
       "index.html",
-      "_QList-B1Nh-SdR.js",
-      "_QSelect-DFoZpJQm.js"
+      "_QList-CJF4GnYP.js",
+      "_QSelect-CkvF03F6.js"
     ]
   },
-  "_copy-to-clipboard-Bl6C0GAX.js": {
-    "file": "assets/copy-to-clipboard-Bl6C0GAX.js",
+  "_copy-to-clipboard-Cpjz-n63.js": {
+    "file": "assets/copy-to-clipboard-Cpjz-n63.js",
     "name": "copy-to-clipboard",
     "imports": [
       "index.html"
     ]
   },
-  "_format-C6z9_4cl.js": {
-    "file": "assets/format-C6z9_4cl.js",
+  "_format-9qgtCh4O.js": {
+    "file": "assets/format-9qgtCh4O.js",
     "name": "format",
     "imports": [
       "index.html"
     ]
   },
-  "_licenses-BwJyPXBp.js": {
-    "file": "assets/licenses-BwJyPXBp.js",
+  "_licenses-DqG25LG4.js": {
+    "file": "assets/licenses-DqG25LG4.js",
     "name": "licenses",
     "imports": [
       "index.html"
     ]
   },
-  "_use-quasar-DZoSXXh4.js": {
-    "file": "assets/use-quasar-DZoSXXh4.js",
+  "_use-quasar-DXKFOMxP.js": {
+    "file": "assets/use-quasar-DXKFOMxP.js",
     "name": "use-quasar",
     "imports": [
       "index.html"
     ]
   },
   "index.html": {
-    "file": "assets/index-DD8oYdUD.js",
+    "file": "assets/index-DDZibmai.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -96,7 +96,7 @@
       "src/pages/SystemPage.vue"
     ],
     "css": [
-      "assets/index-RXolp9aI.css"
+      "assets/index-BBCREMV_.css"
     ],
     "assets": [
       "assets/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbFmUiAw-yBxCyPWP.woff",
@@ -152,114 +152,114 @@
     "src": "node_modules/@quasar/extras/roboto-font/web-font/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbVmUiAw.woff"
   },
   "src/pages/AuditLogPage.vue": {
-    "file": "assets/AuditLogPage-CS_trsyk.js",
+    "file": "assets/AuditLogPage-BkN4t3zB.js",
     "name": "AuditLogPage",
     "src": "src/pages/AuditLogPage.vue",
     "isDynamicEntry": true,
     "imports": [
-      "_QSelect-DFoZpJQm.js",
+      "_QSelect-CkvF03F6.js",
       "index.html",
-      "_QTable-2avo2pvs.js",
-      "_format-C6z9_4cl.js",
-      "_QPage-DVNtnjqv.js",
-      "_QList-B1Nh-SdR.js",
-      "_QItemLabel-D4l0xL9i.js"
+      "_QTable-D-iy2N8-.js",
+      "_format-9qgtCh4O.js",
+      "_QPage-CKQljtXe.js",
+      "_QList-CJF4GnYP.js",
+      "_QItemLabel-NRd1yoeS.js"
     ]
   },
   "src/pages/DashboardPage.vue": {
-    "file": "assets/DashboardPage-C4qfgaAn.js",
+    "file": "assets/DashboardPage-CsjKx9rv.js",
     "name": "DashboardPage",
     "src": "src/pages/DashboardPage.vue",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_QBanner-Dsyrv8OB.js",
-      "_QList-B1Nh-SdR.js",
-      "_QPage-DVNtnjqv.js"
+      "_QBanner-C9LLnz6L.js",
+      "_QList-CJF4GnYP.js",
+      "_QPage-CKQljtXe.js"
     ]
   },
   "src/pages/DomainRegistryPage.vue": {
-    "file": "assets/DomainRegistryPage-C12lTLVw.js",
+    "file": "assets/DomainRegistryPage-Htpgsyiv.js",
     "name": "DomainRegistryPage",
     "src": "src/pages/DomainRegistryPage.vue",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_QSelect-DFoZpJQm.js",
-      "_QTable-2avo2pvs.js",
-      "_QPage-DVNtnjqv.js",
-      "_use-quasar-DZoSXXh4.js",
-      "_copy-to-clipboard-Bl6C0GAX.js",
-      "_licenses-BwJyPXBp.js",
-      "_format-C6z9_4cl.js",
-      "_QList-B1Nh-SdR.js",
-      "_QItemLabel-D4l0xL9i.js"
+      "_QSelect-CkvF03F6.js",
+      "_QTable-D-iy2N8-.js",
+      "_QPage-CKQljtXe.js",
+      "_use-quasar-DXKFOMxP.js",
+      "_copy-to-clipboard-Cpjz-n63.js",
+      "_licenses-DqG25LG4.js",
+      "_format-9qgtCh4O.js",
+      "_QList-CJF4GnYP.js",
+      "_QItemLabel-NRd1yoeS.js"
     ]
   },
   "src/pages/GenerateKeysPage.vue": {
-    "file": "assets/GenerateKeysPage-BlnE-OHQ.js",
+    "file": "assets/GenerateKeysPage-IcPOp7To.js",
     "name": "GenerateKeysPage",
     "src": "src/pages/GenerateKeysPage.vue",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_QList-B1Nh-SdR.js",
-      "_QTable-2avo2pvs.js",
-      "_QBanner-Dsyrv8OB.js",
-      "_QPage-DVNtnjqv.js",
-      "_use-quasar-DZoSXXh4.js",
-      "_copy-to-clipboard-Bl6C0GAX.js",
-      "_QSelect-DFoZpJQm.js",
-      "_format-C6z9_4cl.js",
-      "_QItemLabel-D4l0xL9i.js"
+      "_QList-CJF4GnYP.js",
+      "_QTable-D-iy2N8-.js",
+      "_QBanner-C9LLnz6L.js",
+      "_QPage-CKQljtXe.js",
+      "_use-quasar-DXKFOMxP.js",
+      "_copy-to-clipboard-Cpjz-n63.js",
+      "_QSelect-CkvF03F6.js",
+      "_format-9qgtCh4O.js",
+      "_QItemLabel-NRd1yoeS.js"
     ]
   },
   "src/pages/GenerateLicensePage.vue": {
-    "file": "assets/GenerateLicensePage-DkX3HsYp.js",
+    "file": "assets/GenerateLicensePage-DEm9ulT1.js",
     "name": "GenerateLicensePage",
     "src": "src/pages/GenerateLicensePage.vue",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_QBanner-Dsyrv8OB.js",
-      "_QSelect-DFoZpJQm.js",
-      "_QForm-Db_iI4H_.js",
-      "_QList-B1Nh-SdR.js",
-      "_QPage-DVNtnjqv.js",
-      "_use-quasar-DZoSXXh4.js",
-      "_copy-to-clipboard-Bl6C0GAX.js",
-      "_licenses-BwJyPXBp.js",
-      "_format-C6z9_4cl.js",
-      "_QItemLabel-D4l0xL9i.js"
+      "_QBanner-C9LLnz6L.js",
+      "_QSelect-CkvF03F6.js",
+      "_QForm-NeDRoy9q.js",
+      "_QList-CJF4GnYP.js",
+      "_QPage-CKQljtXe.js",
+      "_use-quasar-DXKFOMxP.js",
+      "_copy-to-clipboard-Cpjz-n63.js",
+      "_licenses-DqG25LG4.js",
+      "_format-9qgtCh4O.js",
+      "_QItemLabel-NRd1yoeS.js"
     ]
   },
   "src/pages/GuidePage.vue": {
-    "file": "assets/GuidePage-DGcCHkU7.js",
+    "file": "assets/GuidePage-BS7OL3ZD.js",
     "name": "GuidePage",
     "src": "src/pages/GuidePage.vue",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_QList-B1Nh-SdR.js",
-      "_QItemLabel-D4l0xL9i.js",
-      "_QPage-DVNtnjqv.js"
+      "_QList-CJF4GnYP.js",
+      "_QItemLabel-NRd1yoeS.js",
+      "_QPage-CKQljtXe.js"
     ],
     "css": [
       "assets/GuidePage-BqJnhnUq.css"
     ]
   },
   "src/pages/SystemPage.vue": {
-    "file": "assets/SystemPage-D3hT6mCP.js",
+    "file": "assets/SystemPage-DZGMgsZM.js",
     "name": "SystemPage",
     "src": "src/pages/SystemPage.vue",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_QForm-Db_iI4H_.js",
-      "_QBanner-Dsyrv8OB.js",
-      "_format-C6z9_4cl.js",
-      "_QPage-DVNtnjqv.js",
-      "_use-quasar-DZoSXXh4.js"
+      "_QForm-NeDRoy9q.js",
+      "_QBanner-C9LLnz6L.js",
+      "_format-9qgtCh4O.js",
+      "_QPage-CKQljtXe.js",
+      "_use-quasar-DXKFOMxP.js"
     ]
   }
 }
