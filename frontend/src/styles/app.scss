@@ -1,0 +1,360 @@
+/* TS License Manager — Custom Styles */
+/* Override Quasar's fixed positioning to work inside WP Admin */
+
+/* WordPress admin overrides */
+#tslm-app {
+  font-family: 'Roboto', -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e1e2e;
+  margin-left: -20px;
+  margin-right: -10px;
+  margin-top: -10px;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Neutralize WordPress admin forms.css — it applies border/shadow to all inputs */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="url"],
+  input[type="search"],
+  input[type="password"],
+  input[type="tel"],
+  select,
+  textarea {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    outline: none !important;
+    border-radius: 0 !important;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  a:hover,
+  a:focus {
+    color: inherit;
+    box-shadow: none;
+  }
+}
+
+/* Same reset for Quasar dialogs — they render outside #tslm-app via portal */
+.q-dialog {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="url"],
+  input[type="search"],
+  input[type="password"],
+  input[type="tel"],
+  select,
+  textarea {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    outline: none !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* === CRITICAL: Override Quasar fixed positioning === */
+#tslm-app .q-layout {
+  position: relative !important;
+  min-height: auto !important;
+}
+
+#tslm-app .q-header {
+  position: relative !important;
+  transform: none !important;
+}
+
+#tslm-app .q-page-container {
+  padding-top: 0 !important;
+}
+
+#tslm-app .q-layout__section--marginal {
+  position: relative !important;
+}
+
+/* Layout root */
+.tslm-layout {
+  background: #f0f2f5;
+}
+
+/* Header */
+.tslm-header {
+  background: #1a1a2e !important;
+}
+
+.tslm-toolbar {
+  min-height: 48px !important;
+  padding: 0 20px;
+}
+
+.tslm-title {
+  font-size: 1rem;
+}
+
+/* Navigation tabs */
+.tslm-nav {
+  display: flex;
+  background: #16213e;
+  padding: 0 12px;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.tslm-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  text-decoration: none !important;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.tslm-nav-active {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  font-weight: 600;
+}
+
+/* Dashboard stat cards */
+.stat-card {
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: #fff;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #1e1e2e;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #5f6368;
+    font-weight: 600;
+  }
+}
+
+/* Code display */
+.code-display {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'Roboto Mono', 'Consolas', monospace;
+  font-size: 12px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  position: relative;
+
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+}
+
+/* Key display */
+.key-display {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Roboto Mono', 'Consolas', monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+/* Status badges */
+.status-active {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.status-expired {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.status-revoked {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* Page header */
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1e1e2e;
+  }
+
+  p {
+    color: #5f6368;
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+  }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+
+  .q-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #6b7280;
+  }
+}
+
+/* Cards */
+#tslm-app .q-card {
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+/* Tables */
+#tslm-app .q-table {
+  th {
+    font-weight: 700;
+    color: #374151;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  td {
+    color: #1f2937;
+    font-size: 13px;
+  }
+}
+
+/* Buttons */
+#tslm-app .q-btn {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+/* Input labels */
+#tslm-app .q-field__label {
+  color: #5f6368;
+}
+
+#tslm-app .q-field__control {
+  color: #1e1e2e;
+}
+
+/* ================================================================
+   FIELD OVERRIDES — Minimal, works WITH Quasar outlined variant
+   Only changes: background fill + border color. No pseudo-element hacks.
+   ================================================================ */
+
+/* Light background fill for all outlined fields */
+#tslm-app .q-field--outlined .q-field__control,
+.q-dialog .q-field--outlined .q-field__control {
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+/* Softer border color via Quasar's own ::before pseudo-element */
+#tslm-app .q-field--outlined .q-field__control::before,
+.q-dialog .q-field--outlined .q-field__control::before {
+  border-color: transparent !important;
+  border-radius: 8px !important;
+}
+
+/* Hover — slightly darker border */
+#tslm-app .q-field--outlined:hover .q-field__control::before,
+.q-dialog .q-field--outlined:hover .q-field__control::before {
+  border-color: #c0c6cf !important;
+}
+
+/* Suppress browser default focus outline (Quasar handles focus via ::after) */
+#tslm-app .q-field--outlined .q-field__control {
+  outline: none !important;
+}
+
+/* ================================================================
+   CARD & TABLE — clean, borderless
+   ================================================================ */
+#tslm-app .q-card {
+  border: none;
+}
+
+#tslm-app .q-separator {
+  background: #e8e8e8;
+}
+
+#tslm-app .q-table__card {
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Smooth animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tslm-nav-item span {
+    display: none;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.8rem;
+  }
+}
