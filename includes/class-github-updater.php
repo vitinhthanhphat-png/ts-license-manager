@@ -167,6 +167,7 @@ class GitHub_Updater {
 			$item->package      = '';
 
 			$transient->no_update[ $this->plugin_basename ] = $item;
+			unset( $transient->response[ $this->plugin_basename ] );
 		}
 
 		return $transient;
