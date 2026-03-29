@@ -108,4 +108,65 @@ class Database {
             ['%s', '%s', '%d', '%s', '%d', '%s', '%s']
         );
     }
+
+    /**
+     * Export all TSLM tables to JSON
+     */
+    public static function export_to_json(): string {
+        global $wpdb;
+        $data = [
+            'keys'     => $wpdb->get_results("SELECT * FROM " . self::table(self::KEYS_TABLE), ARRAY_A),
+            'licenses' => $wpdb->get_results("SELECT * FROM " . self::table(self::LICENSE_TABLE), ARRAY_A),
+            'audit'    => $wpdb->get_results("SELECT * FROM " . self::table(self::AUDIT_TABLE), ARRAY_A),
+            'version'  => TSLM_VERSION,
+        ];
+        return wp_json_encode($data);
+    }
+
+    /**
+     * Import from JSON, wipes current tables
+     */
+    public static function import_from_json(string $json): bool {
+        global $wpdb;
+        $data = json_decode($json, true);
+        if (!$data || !is_array($data)) {
+            return false;
+        }
+
+        $wpdb->query('START TRANSACTION');
+
+        try {
+            // Truncate tables
+            $wpdb->query("TRUNCATE TABLE " . self::table(self::KEYS_TABLE));
+            $wpdb->query("TRUNCATE TABLE " . self::table(self::LICENSE_TABLE));
+            $wpdb->query("TRUNCATE TABLE " . self::table(self::AUDIT_TABLE));
+
+            // Insert Keys
+            if (!empty($data['keys'])) {
+                foreach ($data['keys'] as $row) {
+                    $wpdb->insert(self::table(self::KEYS_TABLE), $row);
+                }
+            }
+
+            // Insert Licenses
+            if (!empty($data['licenses'])) {
+                foreach ($data['licenses'] as $row) {
+                    $wpdb->insert(self::table(self::LICENSE_TABLE), $row);
+                }
+            }
+
+            // Insert Audit
+            if (!empty($data['audit'])) {
+                foreach ($data['audit'] as $row) {
+                    $wpdb->insert(self::table(self::AUDIT_TABLE), $row);
+                }
+            }
+
+            $wpdb->query('COMMIT');
+            return true;
+        } catch (\Exception $e) {
+            $wpdb->query('ROLLBACK');
+            return false;
+        }
+    }
 }

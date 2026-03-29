@@ -67,6 +67,7 @@ const navItems = [
   { path: '/generate-license', icon: 'card_giftcard', label: 'Generate License' },
   { path: '/domains', icon: 'dns', label: 'Domains' },
   { path: '/audit-log', icon: 'history', label: 'Audit Log' },
+  { path: '/system', icon: 'settings', label: 'System' },
   { path: '/guide', icon: 'menu_book', label: 'Guide' },
 ]
 

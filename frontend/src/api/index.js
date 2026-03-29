@@ -55,3 +55,18 @@ export const licensesApi = {
 export const auditApi = {
   getLog: (params = {}) => api.get('audit-log', { params }),
 }
+
+// ── System ──
+export const systemApi = {
+  backup: (password) => api.post('system/backup', { password }),
+  restore: (file, password) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('password', password)
+    return api.post('system/restore', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+}

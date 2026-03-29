@@ -133,6 +133,19 @@ class Rest_Api {
             'permission_callback' => [$this, 'check_admin'],
         ]);
 
+        // ── System ──
+        register_rest_route(self::NAMESPACE, '/system/backup', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'system_backup'],
+            'permission_callback' => [$this, 'check_admin'],
+        ]);
+
+        register_rest_route(self::NAMESPACE, '/system/restore', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'system_restore'],
+            'permission_callback' => [$this, 'check_admin'],
+        ]);
+
         // ── Audit Log ──
         register_rest_route(self::NAMESPACE, '/audit-log', [
             'methods'             => 'GET',
@@ -407,6 +420,147 @@ class Rest_Api {
             'total' => $total,
             'page'  => $page,
             'pages' => ceil($total / $per_page),
+        ]);
+    }
+
+    /**
+     * Backup system (Database + Keys)
+     */
+    public function system_backup(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
+        if (!class_exists('ZipArchive')) {
+            return new \WP_Error('no_zip', 'Server does not support ZipArchive', ['status' => 500]);
+        }
+
+        $password = $request->get_param('password');
+        if (empty($password)) {
+            return new \WP_Error('missing_params', 'Password is required', ['status' => 400]);
+        }
+
+        $json_data = Database::export_to_json();
+        
+        $upload_dir = wp_upload_dir();
+        $keys_dir   = $upload_dir['basedir'] . '/ts-license-keys';
+        
+        $temp_zip = sys_get_temp_dir() . '/tslm_backup_' . time() . '.zip';
+        $zip = new \ZipArchive();
+        
+        if ($zip->open($temp_zip, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return new \WP_Error('zip_fail', 'Cannot create zip file', ['status' => 500]);
+        }
+
+        $zip->addFromString('database.json', $json_data);
+
+        if (is_dir($keys_dir)) {
+            $files = scandir($keys_dir);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') continue;
+                if (str_ends_with($file, '.pem')) {
+                    $zip->addFile($keys_dir . '/' . $file, 'keys/' . $file);
+                }
+            }
+        }
+        
+        $zip->setPassword($password);
+        if (defined('\ZipArchive::EM_AES_256')) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $zip->setEncryptionIndex($i, \ZipArchive::EM_AES_256);
+            }
+        } else {
+            // Fallback for older PHP
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $zip->setEncryptionIndex($i, \ZipArchive::EM_TRAD_PKWARE);
+            }
+        }
+
+        $zip->close();
+        
+        $base64 = base64_encode(file_get_contents($temp_zip));
+        unlink($temp_zip);
+
+        Database::audit_log('system_backup');
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'file'    => $base64,
+            'name'    => 'tslm_backup_' . date('Ymd_His') . '.zip'
+        ]);
+    }
+
+    /**
+     * Restore system (Database + Keys)
+     */
+    public function system_restore(\WP_REST_Request $request): \WP_REST_Response|\WP_Error {
+        if (!class_exists('ZipArchive')) {
+            return new \WP_Error('no_zip', 'Server does not support ZipArchive', ['status' => 500]);
+        }
+
+        $password = $request->get_param('password');
+        $files    = $request->get_file_params();
+
+        if (empty($password) || empty($files['file'])) {
+            return new \WP_Error('missing_params', 'File and password are required', ['status' => 400]);
+        }
+
+        $temp_zip = $files['file']['tmp_name'];
+        if (!file_exists($temp_zip)) {
+            return new \WP_Error('upload_fail', 'File upload failed', ['status' => 400]);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($temp_zip) !== true) {
+            return new \WP_Error('zip_invalid', 'Invalid zip file format', ['status' => 400]);
+        }
+
+        if ($zip->setPassword($password) !== true) {
+            $zip->close();
+            return new \WP_Error('zip_password', 'Failed to set decryption password', ['status' => 400]);
+        }
+
+        // Try reading database.json to verify password
+        $json_data = $zip->getFromName('database.json');
+        if ($json_data === false) {
+            $zip->close();
+            return new \WP_Error('zip_decrypt_fail', 'Incorrect password or missing database.json inside archive', ['status' => 400]);
+        }
+
+        // Import Database (Truncates active tables!)
+        $imported = Database::import_from_json($json_data);
+        if (!$imported) {
+            $zip->close();
+            return new \WP_Error('db_fail', 'Failed to import JSON data to database', ['status' => 500]);
+        }
+
+        // Restore keys
+        $upload_dir = wp_upload_dir();
+        $keys_dir   = $upload_dir['basedir'] . '/ts-license-keys';
+        
+        if (is_dir($keys_dir)) {
+            $existing = scandir($keys_dir);
+            foreach ($existing as $file) {
+                if (str_ends_with($file, '.pem')) {
+                    unlink($keys_dir . '/' . $file);
+                }
+            }
+        } else {
+            wp_mkdir_p($keys_dir);
+        }
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if (str_starts_with($name, 'keys/') && str_ends_with($name, '.pem')) {
+                $content = $zip->getFromIndex($i);
+                if ($content !== false) {
+                    file_put_contents($keys_dir . '/' . basename($name), $content);
+                }
+            }
+        }
+
+        $zip->close();
+        Database::audit_log('system_restore');
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => 'System restored successfully'
         ]);
     }
 }

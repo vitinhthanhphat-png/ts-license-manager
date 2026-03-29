@@ -107,5 +107,8 @@ function tslm_init(): void {
         $api = new TSLM\Rest_Api();
         $api->register_routes();
     });
+
+    // OTA Update via GitHub
+    new TSLM\GitHub_Updater('vitinhthanhphat-png', 'ts-license-manager', TSLM_PLUGIN_FILE);
 }
 add_action('plugins_loaded', 'tslm_init');

@@ -31,6 +31,11 @@ const routes = [
     name: 'guide',
     component: () => import('@/pages/GuidePage.vue'),
   },
+  {
+    path: '/system',
+    name: 'system',
+    component: () => import('@/pages/SystemPage.vue'),
+  },
 ]
 
 const router = createRouter({
