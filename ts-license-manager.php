@@ -3,7 +3,7 @@
  * Plugin Name: TS License Manager
  * Plugin URI:  https://techsharevn.com
  * Description: RSA-2048 License Key Manager with Quasar admin UI. Generate keys, issue licenses, and manage domains.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      TechShareVN
  * Author URI:  https://techsharevn.com
  * Text Domain: ts-license-manager
