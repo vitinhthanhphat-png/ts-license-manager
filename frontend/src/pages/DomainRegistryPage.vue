@@ -133,6 +133,20 @@
               <q-tooltip>Verify License</q-tooltip>
             </q-btn>
             <q-btn
+              v-if="props.row.status === 'active'"
+              flat round size="sm" icon="lock" color="warning"
+              @click="confirmToggleStatus(props.row, 'locked')"
+            >
+              <q-tooltip>Lock License</q-tooltip>
+            </q-btn>
+            <q-btn
+              v-else-if="props.row.status === 'locked' || props.row.status === 'revoked'"
+              flat round size="sm" icon="lock_open" color="positive"
+              @click="confirmToggleStatus(props.row, 'active')"
+            >
+              <q-tooltip>Unlock License</q-tooltip>
+            </q-btn>
+            <q-btn
               flat round size="sm" icon="delete" color="negative"
               @click="confirmDelete(props.row)"
             >
@@ -174,6 +188,7 @@ const pagination = ref({
 const statusOptions = [
   { label: 'All Statuses', value: '' },
   { label: 'Active', value: 'active' },
+  { label: 'Locked/Revoked', value: 'locked' },
   { label: 'Expired', value: 'expired' },
 ]
 
@@ -262,6 +277,27 @@ function confirmDelete(row) {
       $q.notify({ type: 'positive', message: `License for ${row.domain} deleted` })
     } catch (e) {
       $q.notify({ type: 'negative', message: 'Failed to delete license' })
+    }
+  })
+}
+
+function confirmToggleStatus(row, newStatus) {
+  const actionName = newStatus === 'active' ? 'Unlock' : 'Lock'
+  const actionColor = newStatus === 'active' ? 'positive' : 'warning'
+  
+  $q.dialog({
+    title: `${actionName} License`,
+    message: `Are you sure you want to <strong>${actionName.toLowerCase()}</strong> the license for <strong>${row.domain}</strong>?`,
+    html: true,
+    cancel: true,
+    persistent: true,
+    color: actionColor,
+  }).onOk(async () => {
+    try {
+      await store.updateStatus(row.id, newStatus)
+      $q.notify({ type: 'positive', message: `License for ${row.domain} is now ${newStatus}` })
+    } catch (e) {
+      $q.notify({ type: 'negative', message: `Failed to ${actionName.toLowerCase()} license` })
     }
   })
 }

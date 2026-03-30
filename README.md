@@ -25,12 +25,12 @@ No SaaS subscription. No external API dependency. 100% offline verification on c
 
 - 🔑 **RSA-2048 Key Management** — Generate and rotate key pairs from the admin UI
 - 📜 **License Generation** — Issue domain-locked licenses with lifetime, yearly, or trial types
-- 🌐 **Domain Registry** — Track which domains have issued licenses and delete them if necessary
+- 🌐 **Domain Registry** — Track domains & remotely lock/revoke licenses in real-time
+- 🛡️ **Hybrid Heartbeat (Remote Lock)** — Offline-first validation with an asynchronous 7-day server ping and Deadman Switch Grace Period
 - 📊 **Dashboard** — Overview of total licenses, active domains, and key status
 - 📋 **Audit Log** — Complete history of all license operations
 - 📖 **Built-in Guide** — Integration snippets and step-by-step instructions
-- ✈️ **100% Offline Verification** — Client plugins verify licenses locally, no phone-home
-- 🛡️ **Tamper-proof** — RSA signatures cannot be forged without the private key
+- ✈️ **100% Offline Verification** — Client plugins verify licenses locally via RSA-2048 signature without slowing down page loads
 
 ## How It Works
 
@@ -118,45 +118,51 @@ Add this verification function to your client plugin:
 
 ```php
 function my_plugin_verify_license(string $activation_code): string {
-    $public_key = MY_PLUGIN_PUBLIC_KEY;
-    $license_data = json_decode(
-        base64_decode($activation_code), true
-    );
+    // HARDCODE YOUR PUBLIC KEY HERE
+    $public_key = "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0B...\n-----END PUBLIC KEY-----";
+    $license_data = json_decode(base64_decode($activation_code), true);
 
-    if (!$license_data || !isset($license_data['sig'], $license_data['data'])) {
-        return 'invalid_format';
-    }
+    if (!$license_data || !isset($license_data['sig'], $license_data['data'])) return 'invalid_format';
 
     // Step 1: Verify RSA signature
-    $signature = base64_decode($license_data['sig']);
-    $payload   = json_encode($license_data['data']);
-    $valid     = openssl_verify(
-        $payload, $signature, $public_key,
-        OPENSSL_ALGO_SHA256
-    );
-    if ($valid !== 1) {
-        return 'invalid_signature';
-    }
+    $valid = openssl_verify(json_encode($license_data['data']), base64_decode($license_data['sig']), $public_key, OPENSSL_ALGO_SHA256);
+    if ($valid !== 1) return 'invalid_signature';
 
-    // Step 2: Verify domain (skip on localhost for dev)
-    $data    = $license_data['data'];
+    // Step 2: Verify domain
+    $data = $license_data['data'];
     $current = parse_url(home_url(), PHP_URL_HOST);
-    $is_local = in_array($current, ['localhost', '127.0.0.1', '::1'])
-                || str_ends_with($current, '.local');
+    $is_local = in_array($current, ['localhost', '127.0.0.1', '::1']) || str_ends_with($current, '.local');
+    if (!$is_local && $data['domain'] !== $current) return 'domain_mismatch';
 
-    if (!$is_local && $data['domain'] !== $current) {
-        return 'domain_mismatch';
-    }
+    // Step 3: Check expiry
+    if (!empty($data['expires_at']) && time() > strtotime($data['expires_at'])) return 'license_expired';
 
-    // Step 3: Check expiry (lifetime = no expiry)
-    if (!empty($data['expires_at'])) {
-        $expires = strtotime($data['expires_at']);
-        if (time() > $expires) {
-            return 'license_expired';
+    // Step 4: Hybrid Heartbeat (Remote Lock Check)
+    if (!$is_local) {
+        $last_check = (int) get_option('my_plugin_last_check', 0);
+        if (time() - $last_check > 7 * DAY_IN_SECONDS) {
+            $resp = wp_remote_post('https://YOUR_SERVER.com/wp-json/tslm/v1/verify', ['body' => ['domain' => $current], 'timeout' => 15]);
+            if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
+                $body = json_decode(wp_remote_retrieve_body($resp), true);
+                if (!empty($body['data']) && openssl_verify(json_encode($body['data']['data']), base64_decode($body['data']['sig']), $public_key, OPENSSL_ALGO_SHA256) === 1) {
+                    if ($body['data']['data']['status'] === 'locked') {
+                        update_option('my_plugin_remote_locked', true);
+                        return 'license_locked_remotely';
+                    }
+                    update_option('my_plugin_last_check', time());
+                    delete_option('my_plugin_grace_start');
+                    delete_option('my_plugin_remote_locked');
+                }
+            } else {
+                // Deadman Switch Grace Period
+                $grace = (int) get_option('my_plugin_grace_start', 0);
+                if (!$grace) update_option('my_plugin_grace_start', time());
+                elseif (time() - $grace > 3 * DAY_IN_SECONDS) return 'grace_period_expired';
+            }
         }
+        if (get_option('my_plugin_remote_locked')) return 'license_locked_remotely';
     }
 
-    // License type: $data['type'] = 'lifetime' | 'yearly' | 'trial'
     return 'active';
 }
 ```

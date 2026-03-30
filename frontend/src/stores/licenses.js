@@ -58,6 +58,19 @@ export const useLicenseStore = defineStore('licenses', () => {
     }
   }
 
+  async function updateStatus(id, status) {
+    loading.value = true
+    try {
+      await licensesApi.changeStatus(id, status)
+      await fetchLicenses()
+    } catch (e) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function verifyLicense(id) {
     try {
       const { data } = await licensesApi.verify(id)
@@ -90,6 +103,7 @@ export const useLicenseStore = defineStore('licenses', () => {
     fetchLicenses,
     generateLicense,
     deleteLicense,
+    updateStatus,
     verifyLicense,
     bulkGenerate,
   }

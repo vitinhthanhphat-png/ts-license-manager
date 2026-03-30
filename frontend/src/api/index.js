@@ -47,6 +47,7 @@ export const licensesApi = {
   getAll: (params = {}) => api.get('licenses', { params }),
   generate: (data) => api.post('licenses/generate', data),
   delete: (id) => api.delete(`licenses/${id}`),
+  changeStatus: (id, status) => api.post(`licenses/${id}/status`, { status }),
   verify: (id) => api.post(`licenses/${id}/verify`),
   bulkGenerate: (domains) => api.post('licenses/bulk', { domains }),
 }

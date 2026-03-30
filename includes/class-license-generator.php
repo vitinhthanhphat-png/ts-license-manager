@@ -51,23 +51,7 @@ class License_Generator {
         $payload = array_filter($payload, fn($v) => $v !== null);
 
         // Sign the payload
-        $payload_json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        $pkey_resource = openssl_pkey_get_private($private_key);
-        if (!$pkey_resource) {
-            throw new \RuntimeException('Failed to load private key: ' . openssl_error_string());
-        }
-
-        $sign_result = openssl_sign($payload_json, $signature, $pkey_resource, OPENSSL_ALGO_SHA256);
-        if (!$sign_result) {
-            throw new \RuntimeException('Failed to sign payload: ' . openssl_error_string());
-        }
-
-        // Pack: { sig: base64(signature), data: payload }
-        $package = [
-            'sig'  => base64_encode($signature),
-            'data' => $payload,
-        ];
+        $package = $this->sign_data($payload, $key_id);
 
         $activation_code = base64_encode(json_encode($package, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
@@ -307,5 +291,33 @@ class License_Generator {
             return true;
         }
         return filter_var($domain_only, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
+    }
+
+    /**
+     * Sign arbitrary data array with the active RSA private key.
+     * Required for heartbeat 'call home' signed responses.
+     */
+    public function sign_data(array $data, ?int $key_id = null): array {
+        $private_key = $this->key_manager->get_active_private_key($key_id);
+        if (!$private_key) {
+            throw new \RuntimeException('No signed private key found. Generate or import a key first.');
+        }
+
+        $payload_json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $pkey_resource = openssl_pkey_get_private($private_key);
+        
+        if (!$pkey_resource) {
+            throw new \RuntimeException('Failed to load private key: ' . openssl_error_string());
+        }
+
+        $sign_result = openssl_sign($payload_json, $signature, $pkey_resource, OPENSSL_ALGO_SHA256);
+        if (!$sign_result) {
+            throw new \RuntimeException('Failed to sign payload: ' . openssl_error_string());
+        }
+
+        return [
+            'sig'  => base64_encode($signature),
+            'data' => $data,
+        ];
     }
 }

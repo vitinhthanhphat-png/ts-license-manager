@@ -112,8 +112,10 @@
               Add this to your client plugin to verify licenses:
             </p>
             <div class="code-block">
-              <pre class="text-caption q-ma-none"><code>// In your plugin's license checker
-$public_key = get_option('my_plugin_public_key');
+              <pre class="text-caption q-ma-none"><code>// In your plugin's license checker (HARDCODE THIS FOR SECURITY)
+$public_key = &quot;-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQE... (YOUR_PUBLIC_KEY_HERE)
+-----END PUBLIC KEY-----&quot;;
 $license_data = json_decode(
   base64_decode($activation_code), true
 );
@@ -148,13 +150,64 @@ if (!empty($data['expires_at'])) {
   }
 }
 
-// Step 4: License type info
-// $data['type'] = 'lifetime' | 'yearly' | 'trial'
-// $data['created_at'] = '2026-01-15 10:00:00'
-// $data['expires_at'] = null (lifetime) or date
+// Step 4: Remote Lock (Hybrid Heartbeat)
+// Run this via WP-Cron or Async to ensure fast page loads
+if (!$is_local) {
+  $last_check = (int) get_option('my_plugin_last_check', 0);
+  
+  // Every 7 days, verify with the license server
+  if (time() - $last_check > 7 * DAY_IN_SECONDS) {
+    $resp = wp_remote_post('https://YOUR_SERVER.com/wp-json/tslm/v1/verify', [
+       'body' => ['domain' => $current], 'timeout' => 15
+    ]);
+    
+    if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
+       $body = json_decode(wp_remote_retrieve_body($resp), true);
+       if (!empty($body['data'])) {
+           // Verify RSA Signature of Heartbeat
+           $hb_sig = base64_decode($body['data']['sig']);
+           $hb_data = json_encode($body['data']['data']);
+           if (openssl_verify($hb_data, $hb_sig, $public_key, OPENSSL_ALGO_SHA256) === 1) {
+               $hb_payload = $body['data']['data'];
+               
+               if ($hb_payload['status'] === 'locked') {
+                   update_option('my_plugin_remote_locked', true);
+                   return 'license_locked_remotely';
+               }
+               
+               // Success! Reset check and clear grace
+               update_option('my_plugin_last_check', time());
+               delete_option('my_plugin_grace_start');
+               delete_option('my_plugin_remote_locked');
+           }
+       }
+    } else {
+       // Server down/blocked. Start 3-day Grace Period (Deadman Switch)
+       $grace = (int) get_option('my_plugin_grace_start', 0);
+       if (!$grace) {
+           update_option('my_plugin_grace_start', time());
+       } elseif (time() - $grace > 3 * DAY_IN_SECONDS) {
+           return 'grace_period_expired';
+       }
+    }
+  }
+  
+  // Block if previously locked
+  if (get_option('my_plugin_remote_locked')) return 'license_locked_remotely';
+}
 
 return 'active'; // ✅ License valid!</code></pre>
             </div>
+
+            <q-banner rounded class="bg-blue-1 text-blue-9 q-mt-md">
+              <template v-slot:avatar>
+                <q-icon name="info" color="blue-7" />
+              </template>
+              <strong>Pro Tip: Create a "Refresh License" Button for your users.</strong><br/>
+              Since the heartbeat only checks every 7 days, if a customer pays to unlock their site, they will need a way to force an immediate check. In your plugin's settings page, add a "Refresh License" button that runs: 
+              <code>delete_option('my_plugin_last_check'); delete_option('my_plugin_remote_locked');</code>
+              so the next page load will immediately contact the license server and unlock their site.
+            </q-banner>
           </q-card-section>
         </q-card>
       </div>

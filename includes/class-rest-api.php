@@ -122,6 +122,19 @@ class Rest_Api {
             'permission_callback' => [$this, 'check_admin'],
         ]);
 
+        register_rest_route(self::NAMESPACE, '/licenses/(?P<id>\d+)/status', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'change_license_status'],
+            'permission_callback' => [$this, 'check_admin'],
+            'args' => [
+                'status' => [
+                    'required' => true,
+                    'type'     => 'string',
+                    'enum'     => ['active', 'locked', 'revoked'],
+                ],
+            ],
+        ]);
+
         register_rest_route(self::NAMESPACE, '/licenses/bulk', [
             'methods'             => 'POST',
             'callback'            => [$this, 'bulk_generate'],
@@ -139,6 +152,20 @@ class Rest_Api {
             'methods'             => 'POST',
             'callback'            => [$this, 'system_restore'],
             'permission_callback' => [$this, 'check_admin'],
+        ]);
+
+        // ── Public Heartbeat API ──
+        register_rest_route(self::NAMESPACE, '/verify', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'public_verify'],
+            'permission_callback' => '__return_true', // Public endpoint
+            'args' => [
+                'domain' => [
+                    'required' => true,
+                    'type'     => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
         ]);
 
         // ── Audit Log ──
@@ -318,6 +345,40 @@ class Rest_Api {
             'success' => $deleted,
             'message' => $deleted ? 'License deleted' : 'License not found',
         ], $deleted ? 200 : 404);
+    }
+
+    public function change_license_status(\WP_REST_Request $request): \WP_REST_Response {
+        $id = (int) $request->get_param('id');
+        $status = sanitize_text_field($request->get_param('status'));
+
+        global $wpdb;
+        $table = Database::table(Database::LICENSE_TABLE);
+
+        $license = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $id), ARRAY_A);
+        if (!$license) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'License not found',
+            ], 404);
+        }
+
+        $wpdb->update(
+            $table,
+            ['status' => $status],
+            ['id' => $id],
+            ['%s'],
+            ['%d']
+        );
+
+        Database::audit_log('license_' . $status, 'license', $id, [
+            'domain' => $license['domain'],
+            'status' => $status,
+        ]);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => 'License status updated to ' . $status,
+        ]);
     }
 
     public function verify_license(\WP_REST_Request $request): \WP_REST_Response {
@@ -585,5 +646,57 @@ class Rest_Api {
             'success' => true,
             'message' => 'System restored successfully'
         ]);
+    }
+
+    /**
+     * Handle public heartbeat pings from external client websites.
+     */
+    public function public_verify(\WP_REST_Request $request) {
+        $domain = $request->get_param('domain');
+        // Clean up domain (e.g. https://domain.com -> domain.com)
+        $domain = parse_url((strpos($domain, 'http') === 0 ? $domain : 'http://' . $domain), PHP_URL_HOST);
+
+        global $wpdb;
+        $table = Database::table(Database::LICENSE_TABLE);
+        $now = current_time('mysql');
+
+        // Look for an active, unexpired license for this domain
+        $license = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE domain = %s AND status = 'active' AND (expires_at IS NULL OR expires_at > %s)",
+            $domain, $now
+        ));
+
+        try {
+            $generator = new License_Generator();
+
+            if (!$license) {
+                // Return a signed 'locked' response
+                $payload = ['domain' => $domain, 'status' => 'locked'];
+                $signed_data = $generator->sign_data($payload);
+
+                return rest_ensure_response([
+                    'success' => true,
+                    'data'    => $signed_data,
+                ]);
+            }
+
+            // Return a signed 'active' response with 7-day validity
+            $payload = [
+                'domain'      => $domain,
+                'status'      => 'active',
+                'valid_until' => time() + (7 * DAY_IN_SECONDS),
+            ];
+
+            $signed_data = $generator->sign_data($payload);
+
+            return rest_ensure_response([
+                'success' => true,
+                'data'    => $signed_data, // Contains ['sig'] and ['data']
+            ]);
+
+        } catch (\Exception $e) {
+            // If checking fails (e.g., no active private key set up on server)
+            return new \WP_Error('server_error', 'Cannot process verification signature.', ['status' => 500]);
+        }
     }
 }
