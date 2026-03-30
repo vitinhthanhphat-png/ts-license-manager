@@ -48,6 +48,8 @@ class GitHub_Updater {
 		add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'check_update' ] );
 		add_filter( 'plugins_api', [ $this, 'plugin_info' ], 20, 3 );
 		add_filter( 'upgrader_post_install', [ $this, 'after_install' ], 10, 3 );
+		add_filter( 'plugin_row_meta', [ $this, 'add_check_update_link' ], 10, 2 );
+		add_action( 'admin_init', [ $this, 'handle_manual_check' ] );
 	}
 
 	/**
@@ -261,5 +263,48 @@ class GitHub_Updater {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Add "Check for updates" link to plugin meta row.
+	 *
+	 * @param array  $links Plugin meta links.
+	 * @param string $file  Plugin file name.
+	 * @return array Modified meta links.
+	 */
+	public function add_check_update_link( array $links, string $file ): array {
+		if ( $file === $this->plugin_basename ) {
+			$url = wp_nonce_url( admin_url( 'plugins.php?tslm_check_update=1' ), 'tslm_check_update' );
+			$links[] = '<a href="' . esc_url( $url ) . '" style="color: #2271b1; font-weight: 500;">' . esc_html__( 'Check for updates', 'ts-license-manager' ) . '</a>';
+		}
+		return $links;
+	}
+
+	/**
+	 * Process manual update check.
+	 */
+	public function handle_manual_check(): void {
+		if ( ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+
+		if ( isset( $_GET['tslm_check_update'] ) && '1' === $_GET['tslm_check_update'] ) {
+			if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'tslm_check_update' ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'ts-license-manager' ) );
+			}
+
+			// Clear GitHub transient cache
+			delete_transient( $this->cache_key );
+			
+			// Clear WordPress core plugin update cache
+			delete_site_transient( 'update_plugins' );
+
+			// Force WordPress to immediately fetch updates
+			wp_update_plugins();
+
+			// Redirect back cleanly
+			wp_safe_redirect( admin_url( 'plugins.php' ) );
+			exit;
+		}
 	}
 }
