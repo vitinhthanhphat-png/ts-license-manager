@@ -269,11 +269,15 @@ function exportGuide(key) {
   const apiUrl = window.location.origin + '/wp-json/tslm/v1/licenses/heartbeat'
   const mdContent = `# TS License Manager Integration Guide
 
-## 1. Overview
-This guide provides the necessary code and credentials to integrate your plugin/theme with the TS License Manager using the RSA-2048 Asymmetric Signature verification method.
+## 1. Quick Start
+
+1. **Generate RSA Key Pair**: You have generated key **${key.key_name}**.
+2. **Embed Public Key**: Copy the code from Section 3 into your plugin's code.
+3. **Generate License**: Use the Generate License tab to create an activation code for your customer's domain.
+4. **Customer Activates**: The customer pastes the code. Your plugin verifies it using the embedded public key – 100% offline initially!
 
 ## 2. API Server
-**Endpoint:** \`${apiUrl}\`
+**Heartbeat Endpoint:** \`${apiUrl}\`
 
 ## 3. Your Public Key (ID: ${key.id})
 To verify licenses signed by **${key.key_name}**, you must hardcode the following Public Key into your plugin's source code.
@@ -282,39 +286,114 @@ To verify licenses signed by **${key.key_name}**, you must hardcode the followin
 ${key.public_key}
 \`\`\`
 
-## 4. Integration Code Snippet
-Add this snippet to your plugin to verify the signature of a stored license.
+## 4. Full Integration Code Snippet (Hybrid Heartbeat)
+Add this master snippet to your plugin to verify signatures, check offline expiry, and automatically execute the 7-day heartbeat checks.
 
 \`\`\`php
-function verify_ts_license( $license_string ) {
-    $parts = explode( '.', $license_string );
-    if ( count( $parts ) !== 2 ) return false;
-    
-    $payload_json = base64_decode( $parts[0] );
-    $signature    = base64_decode( $parts[1] );
-    
-    // HARDCODE YOUR PUBLIC KEY HERE
-    $public_key = <<<EOD
+// In your plugin's license checker (HARDCODE THIS FOR SECURITY)
+$public_key = <<<EOD
 ${key.public_key}
 EOD;
 
-    $key_res = openssl_pkey_get_public( $public_key );
-    if ( ! $key_res ) return false;
+$license_data = json_decode(
+  base64_decode($activation_code), true
+);
 
-    $verified = openssl_verify( $payload_json, $signature, $key_res, OPENSSL_ALGO_SHA256 );
+// Step 1: Verify signature
+$signature = base64_decode($license_data['sig']);
+$payload = json_encode($license_data['data']);
+$valid = openssl_verify(
+  $payload, $signature, $public_key,
+  OPENSSL_ALGO_SHA256
+);
 
-    if ( $verified === 1 ) {
-        return json_decode( $payload_json, true );
-    }
-
-    return false;
+if ($valid !== 1) {
+  return 'invalid_signature';
 }
+
+// Step 2: Verify domain (skip on localhost)
+$data = $license_data['data'];
+$current = parse_url(home_url(), PHP_URL_HOST);
+$is_local = in_array($current, [
+  'localhost', '127.0.0.1', '::1'
+]) || str_ends_with($current, '.local');
+
+if (!$is_local && $data['domain'] !== $current) {
+  return 'domain_mismatch';
+}
+
+// Step 3: Check expiry (lifetime = no expiry)
+if (!empty($data['expires_at'])) {
+  $expires = strtotime($data['expires_at']);
+  if (time() > $expires) {
+    return 'license_expired';
+  }
+}
+
+// Step 4: Remote Lock (Hybrid Heartbeat)
+// Run this via WP-Cron or Async to ensure fast page loads
+if (!$is_local) {
+  $last_check = (int) get_option('my_plugin_last_check', 0);
+  
+  // Every 7 days, verify with the license server
+  if (time() - $last_check > 7 * DAY_IN_SECONDS) {
+    $resp = wp_remote_post('${apiUrl}', [
+       'body' => ['domain' => $current], 'timeout' => 15
+    ]);
+    
+    if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
+       $body = json_decode(wp_remote_retrieve_body($resp), true);
+       if (!empty($body['data'])) {
+           // Verify RSA Signature of Heartbeat
+           $hb_sig = base64_decode($body['data']['sig']);
+           $hb_data = json_encode($body['data']['data']);
+           if (openssl_verify($hb_data, $hb_sig, $public_key, OPENSSL_ALGO_SHA256) === 1) {
+               $hb_payload = $body['data']['data'];
+               
+               if ($hb_payload['status'] === 'locked') {
+                   update_option('my_plugin_remote_locked', true);
+                   return 'license_locked_remotely';
+               }
+               
+               // Success! Reset check and clear grace
+               update_option('my_plugin_last_check', time());
+               delete_option('my_plugin_grace_start');
+               delete_option('my_plugin_remote_locked');
+           }
+       }
+    } else {
+       // Server down/blocked. Start 3-day Grace Period (Deadman Switch)
+       $grace = (int) get_option('my_plugin_grace_start', 0);
+       if (!$grace) {
+           update_option('my_plugin_grace_start', time());
+       } elseif (time() - $grace > 3 * DAY_IN_SECONDS) {
+           return 'grace_period_expired';
+       }
+    }
+  }
+  
+  // Block if previously locked
+  if (get_option('my_plugin_remote_locked')) return 'license_locked_remotely';
+}
+
+return 'active'; // ✅ License valid!
 \`\`\`
 
 ## 5. Pro Tips & Security Best Practices
-- **Do not store the public key in the database (wp_options)**: This prevents malicious users from easily replacing it with their own key to bypass verification.
-- **Obfuscation**: Use a PHP obfuscator (like **ionCube**, SourceGuardian, or php-obfuscator) on the file containing the \`verify_ts_license\` function and the Public Key string. This makes it extremely difficult for hackers to locate and modify the verification logic.
-- **Hybrid Heartbeat (Optional)**: To force remote checking while allowing offline use, implement a Hybrid Heartbeat mechanism that stores the \`expires_at\` payload locally and calls the API Endpoint seamlessly via a scheduled WP-Cron job.
+
+### The "Refresh License" Button
+Since the heartbeat only checks every 7 days, if a customer pays to unlock their site, they will need a way to force an immediate check. In your plugin's settings page, add a **"Refresh License"** button that runs:
+\`\`\`php
+delete_option('my_plugin_last_check');
+delete_option('my_plugin_remote_locked');
+\`\`\`
+...so the next page load will immediately contact the license server and unlock their site.
+
+### Avoid Database Storage
+**Do not store the public key in the database (wp_options)**: This prevents malicious users from easily replacing it with their own key to bypass verification. Hardcode it directly as shown in the PHP snippet.
+
+### Code Obfuscation
+Use a PHP obfuscator (like **ionCube**, SourceGuardian, or php-obfuscator) on the file containing the \`verify_ts_license\` function and the Public Key string. This makes it extremely difficult for hackers to locate and modify the verification logic.
 
 ---
 *Generated by TS License Manager on ${new Date().toLocaleString()}*
