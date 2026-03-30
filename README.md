@@ -31,6 +31,8 @@ No SaaS subscription. No external API dependency. 100% offline verification on c
 - 📋 **Audit Log** — Complete history of all license operations
 - 📖 **Built-in Guide** — Integration snippets and step-by-step instructions
 - ✈️ **100% Offline Verification** — Client plugins verify licenses locally via RSA-2048 signature without slowing down page loads
+- 🔧 **API Token Generator** — Built-in Base64 encoder for HTTP Basic Auth headers (`username:api_key` → Base64), with copy-to-clipboard and PowerShell command output
+- 💾 **System Backup & Restore** — AES-256 encrypted ZIP backup/restore of all data and RSA keys
 
 ## How It Works
 
