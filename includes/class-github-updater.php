@@ -46,6 +46,7 @@ class GitHub_Updater {
 		$this->version         = TSLM_VERSION;
 
 		add_filter( 'pre_set_site_transient_update_plugins', [ $this, 'check_update' ] );
+		add_filter( 'site_transient_update_plugins', [ $this, 'check_update' ] );
 		add_filter( 'plugins_api', [ $this, 'plugin_info' ], 20, 3 );
 		add_filter( 'upgrader_post_install', [ $this, 'after_install' ], 10, 3 );
 		add_filter( 'plugin_row_meta', [ $this, 'add_check_update_link' ], 10, 2 );
@@ -140,6 +141,12 @@ class GitHub_Updater {
 
 		$release = $this->fetch_release();
 		if ( ! $release || 'error' === $release ) {
+			// Fail-safe: If we hit API limits, do not show false update notifications if we are already matching the version
+			if ( isset( $transient->response[ $this->plugin_basename ] ) ) {
+				if ( version_compare( $transient->response[ $this->plugin_basename ]->new_version ?? '', $this->version, '<=' ) ) {
+					unset( $transient->response[ $this->plugin_basename ] );
+				}
+			}
 			return $transient;
 		}
 
