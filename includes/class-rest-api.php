@@ -165,6 +165,11 @@ class Rest_Api {
                     'type'     => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
                 ],
+                'code' => [
+                    'required' => true,
+                    'type'     => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
             ],
         ]);
 
@@ -653,6 +658,12 @@ class Rest_Api {
      */
     public function public_verify(\WP_REST_Request $request) {
         $domain = $request->get_param('domain');
+        $code   = $request->get_param('code');
+
+        if ( empty($code) ) {
+            return new \WP_REST_Response(['status' => 'error', 'message' => 'Missing license code.'], 400);
+        }
+
         // Clean up domain (e.g. https://domain.com -> domain.com)
         $domain = parse_url((strpos($domain, 'http') === 0 ? $domain : 'http://' . $domain), PHP_URL_HOST);
 
@@ -660,16 +671,16 @@ class Rest_Api {
         $table = Database::table(Database::LICENSE_TABLE);
         $now = current_time('mysql');
 
-        // Look for an active, unexpired license for this domain
+        // Look for exact match by domain and code
         $license = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$table} WHERE domain = %s AND status = 'active' AND (expires_at IS NULL OR expires_at > %s)",
-            $domain, $now
+            "SELECT * FROM {$table} WHERE domain = %s AND activation_code = %s",
+            $domain, $code
         ));
 
         try {
             $generator = new License_Generator();
 
-            if (!$license) {
+            if (!$license || $license->status !== 'active' || ($license->expires_at && $license->expires_at <= $now)) {
                 // Return a signed 'locked' response
                 $payload = ['domain' => $domain, 'status' => 'locked'];
                 $signed_data = $generator->sign_data($payload);

@@ -158,7 +158,11 @@ if (!$is_local) {
   // Every 7 days, verify with the license server
   if (time() - $last_check > 7 * DAY_IN_SECONDS) {
     $resp = wp_remote_post('https://YOUR_SERVER.com/wp-json/tslm/v1/verify', [
-       'body' => ['domain' => $current], 'timeout' => 15
+       'body' => [
+         'domain' => $current, 
+         'code'   => $activation_code
+       ], 
+       'timeout' => 15
     ]);
     
     if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
