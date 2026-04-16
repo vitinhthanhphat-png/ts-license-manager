@@ -266,7 +266,7 @@ function confirmDelete(key) {
 }
 
 function exportGuide(key) {
-  const apiUrl = window.location.origin + '/wp-json/tslm/v1/licenses/heartbeat'
+  const apiUrl = window.location.origin + '/wp-json/tslm/v1/verify'
   const mdContent = `# TS License Manager Integration Guide
 
 ## 1. Quick Start
